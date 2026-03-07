@@ -106,10 +106,17 @@ func (config *Config) GenerateHyperflakeID() (int64, error) {
 
 	if timestamp == config.lastTimestamp {
 		config.sequenceNumber++
+		if config.sequenceNumber > sequenceMask {
+			// Sequence exhausted for this millisecond; spin until the clock ticks.
+			for timestamp == config.lastTimestamp {
+				timestamp = internal.GetCurrentTimestampSinceEpoch(config.epoch)
+			}
+			config.sequenceNumber = 0
+		}
 	} else {
 		config.sequenceNumber = 0
-		config.lastTimestamp = timestamp
 	}
+	config.lastTimestamp = timestamp
 
 	id := (int64(config.signBit) << 63) |
 		(timestamp << timestampShift) |
