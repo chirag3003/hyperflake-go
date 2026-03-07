@@ -195,3 +195,20 @@ func TestSettersGetters(t *testing.T) {
 		t.Errorf("encoded MachineID = %d; want 31", decoded.MachineID)
 	}
 }
+
+func BenchmarkGenerateHyperflakeID(b *testing.B) {
+	config := NewHyperflakeConfig(3, 7)
+	b.ReportAllocs()
+	for i := 0; i < b.N; i++ {
+		_, _ = config.GenerateHyperflakeID()
+	}
+}
+
+func BenchmarkDecodeID(b *testing.B) {
+	config := NewHyperflakeConfig(3, 7)
+	id, _ := config.GenerateHyperflakeID()
+	b.ReportAllocs()
+	for i := 0; i < b.N; i++ {
+		_, _ = config.DecodeID(id)
+	}
+}
