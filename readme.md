@@ -85,7 +85,7 @@ func main() {
     }
     fmt.Println("ID:", id)  // ID: 3273974649684016911
 
-    decodedID, err := hyperflake.DecodeID(id)
+    decodedID, err := config.DecodeID(id)
     if err != nil {
         fmt.Println("Error decoding ID:", err)
         return
@@ -126,7 +126,7 @@ func main() {
             continue
         }
         fmt.Println("ID:", id)
-        decodedID, err := hyperflake.DecodeID(id)
+        decodedID, err := config.DecodeID(id)
         if err != nil {
             fmt.Println("Error decoding ID:", err)
             continue

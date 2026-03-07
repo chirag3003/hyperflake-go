@@ -3,6 +3,7 @@ package hyperflake
 import (
 	"fmt"
 	"github.com/chirag3003/hyperflake-go/internal"
+	"sync"
 	"time"
 )
 
@@ -26,11 +27,12 @@ const (
 
 // Config holds the configuration for generating Hyperflake IDs.
 type Config struct {
-	epoch          int64 // Epoch timestamp in milliseconds
-	datacenterID   int   // Datacenter ID (0–31)
-	machineID      int   // Machine ID (0–31)
-	sequenceNumber int   // Per-millisecond sequence counter
-	signBit        int   // Sign bit (almost always 0)
+	mu             sync.Mutex // Protects sequenceNumber and lastTimestamp
+	epoch          int64      // Epoch timestamp in milliseconds
+	datacenterID   int        // Datacenter ID (0–31)
+	machineID      int        // Machine ID (0–31)
+	sequenceNumber int        // Per-millisecond sequence counter
+	signBit        int        // Sign bit (almost always 0)
 	lastTimestamp  int64
 }
 
@@ -91,7 +93,11 @@ func NewHyperflakeConfigWithEpoch(datacenterID int, machineID int, epoch int64, 
 }
 
 // GenerateHyperflakeID generates a new Hyperflake ID based on the current configuration.
+// It is safe for concurrent use by multiple goroutines.
 func (config *Config) GenerateHyperflakeID() (int64, error) {
+	config.mu.Lock()
+	defer config.mu.Unlock()
+
 	timestamp := internal.GetCurrentTimestampSinceEpoch(config.epoch)
 
 	if timestamp < config.lastTimestamp {
