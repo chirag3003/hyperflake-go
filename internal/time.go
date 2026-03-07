@@ -1,4 +1,4 @@
-package lib
+package internal
 
 import "time"
 
@@ -14,14 +14,4 @@ Returns:
 */
 func GetCurrentTimestampSinceEpoch(epoch int64) int64 {
 	return time.Now().UnixMilli() - epoch
-}
-
-/*
-GetCurrentTimestamp returns the current timestamp in milliseconds since the Unix epoch.
-
-Returns:
-- The current timestamp in milliseconds since the Unix epoch.
-*/
-func GetCurrentTimestamp() int64 {
-	return time.Now().UnixMilli()
 }

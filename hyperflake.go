@@ -1,7 +1,8 @@
 package hyperflake
 
 import (
-	"github.com/chirag3003/hyperflake-go/lib"
+	"fmt"
+	"github.com/chirag3003/hyperflake-go/internal"
 	"time"
 )
 
@@ -56,8 +57,8 @@ func NewHyperflakeConfig(datacenterIDBits int, machineIDBits int, signBit ...int
 		machineIDBits:      machineIDBits,
 		sequenceNumberBits: 0,
 		SignBit:            sBit,
-		datacenterIDBinary: lib.IntToBinaryString(datacenterIDBits, 5),
-		machineIDBinary:    lib.IntToBinaryString(machineIDBits, 5),
+		datacenterIDBinary: internal.IntToBinaryString(datacenterIDBits, 5),
+		machineIDBinary:    internal.IntToBinaryString(machineIDBits, 5),
 	}
 }
 
@@ -81,9 +82,12 @@ func NewHyperflakeConfigWithEpoch(datacenterIDBits int, machineIDBits int, epoch
 
 // GenerateHyperflakeID generates a new Hyperflake ID based on the current configuration.
 func (config *Config) GenerateHyperflakeID() (int64, error) {
-	timestamp := lib.GetCurrentTimestampSinceEpoch(config.epoch)
-	signBitBinary := lib.IntToBinaryString(config.SignBit, 1)
-	timestampBinary := lib.IntToBinaryString(int(timestamp), 41)
+	timestamp := internal.GetCurrentTimestampSinceEpoch(config.epoch)
+	if timestamp < config.lastTimestamp {
+		return 0, fmt.Errorf("clock is moving backwards")
+	}
+	signBitBinary := internal.IntToBinaryString(config.SignBit, 1)
+	timestampBinary := internal.IntToBinaryString(int(timestamp), 41)
 	sequenceNumber := 0
 	if timestamp == config.lastTimestamp {
 		sequenceNumber = config.sequenceNumberBits
@@ -92,55 +96,55 @@ func (config *Config) GenerateHyperflakeID() (int64, error) {
 		config.sequenceNumberBits = 1
 		config.lastTimestamp = timestamp
 	}
-	sequenceNumberBinary := lib.IntToBinaryString(sequenceNumber, 12)
+	sequenceNumberBinary := internal.IntToBinaryString(sequenceNumber, 12)
 
-	hyperflakeBinary := lib.BuildString(64,
+	hyperflakeBinary := internal.BuildString(64,
 		signBitBinary,
 		timestampBinary,
 		config.datacenterIDBinary,
 		config.machineIDBinary,
 		sequenceNumberBinary,
 	)
-	hyperflakeID, err := lib.BinaryStringToInt(hyperflakeBinary)
+	hyperflakeID, err := internal.BinaryStringToInt(hyperflakeBinary)
 	return hyperflakeID, err
 }
 
 // DecodeID decodes a given Hyperflake ID into its components.
 func (config *Config) DecodeID(id int64) (*HyperFlakeID, error) {
 	// Convert the ID to a 64-bit binary string
-	hyperflakeBinary := lib.IntToBinaryString(int(id), 64)
+	hyperflakeBinary := internal.IntToBinaryString(int(id), 64)
 
 	// Extract and convert the sign bit
 	signBitBinary := hyperflakeBinary[:1]
-	signBit, err := lib.BinaryStringToInt(signBitBinary)
+	signBit, err := internal.BinaryStringToInt(signBitBinary)
 	if err != nil {
 		return nil, err
 	}
 
 	// Extract and convert the timestamp
 	timestampBinary := hyperflakeBinary[1:42]
-	timestamp, err := lib.BinaryStringToInt(timestampBinary)
+	timestamp, err := internal.BinaryStringToInt(timestampBinary)
 	if err != nil {
 		return nil, err
 	}
 
 	// Extract and convert the datacenter ID
 	datacenterIDBinary := hyperflakeBinary[42:47]
-	datacenterID, err := lib.BinaryStringToInt(datacenterIDBinary)
+	datacenterID, err := internal.BinaryStringToInt(datacenterIDBinary)
 	if err != nil {
 		return nil, err
 	}
 
 	// Extract and convert the machine ID
 	machineIDBinary := hyperflakeBinary[47:52]
-	machineID, err := lib.BinaryStringToInt(machineIDBinary)
+	machineID, err := internal.BinaryStringToInt(machineIDBinary)
 	if err != nil {
 		return nil, err
 	}
 
 	// Extract and convert the sequence number
 	sequenceNumberBinary := hyperflakeBinary[52:64]
-	sequenceNumber, err := lib.BinaryStringToInt(sequenceNumberBinary)
+	sequenceNumber, err := internal.BinaryStringToInt(sequenceNumberBinary)
 	if err != nil {
 		return nil, err
 	}
@@ -161,13 +165,13 @@ func (config *Config) DecodeID(id int64) (*HyperFlakeID, error) {
 // SetMachineID sets the machine ID in the configuration.
 func (config *Config) SetMachineID(machineID int) {
 	config.machineIDBits = machineID
-	config.machineIDBinary = lib.IntToBinaryString(machineID, 5)
+	config.machineIDBinary = internal.IntToBinaryString(machineID, 5)
 }
 
 // SetDatacenterID sets the datacenter ID in the configuration.
 func (config *Config) SetDatacenterID(datacenterID int) {
 	config.datacenterIDBits = datacenterID
-	config.datacenterIDBinary = lib.IntToBinaryString(datacenterID, 5)
+	config.datacenterIDBinary = internal.IntToBinaryString(datacenterID, 5)
 }
 
 // GetMachineID returns the machine ID from the configuration.
